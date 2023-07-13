@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::ScalingMode};
 
 #[derive(Component)]
 pub struct Player {
@@ -27,16 +27,18 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    let mut camera = Camera2dBundle::default();
+    camera.projection.scaling_mode = ScalingMode::AutoMin {
+        min_width: 256.0,
+        min_height: 144.0,
+    };
+
+    commands.spawn(camera);
 
     let texture = asset_server.load("character.png");
 
     commands.spawn((
         SpriteBundle {
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100.0, 100.0)),
-                ..default()
-            },
             texture,
             ..default()
         },
