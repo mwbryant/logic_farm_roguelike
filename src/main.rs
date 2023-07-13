@@ -1,5 +1,3 @@
-use std::thread::spawn;
-
 use bevy::{prelude::*, render::camera::ScalingMode};
 
 #[derive(Component)]
