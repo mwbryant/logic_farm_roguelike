@@ -6,11 +6,13 @@ pub struct PigPlugin;
 
 impl Plugin for PigPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (spawn_pig, pig_lifetime));
+        app.add_systems(Update, (spawn_pig, pig_lifetime))
+            .register_type::<Pig>();
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct Pig {
     pub lifetime: Timer,
 }
@@ -43,6 +45,7 @@ fn spawn_pig(
             Pig {
                 lifetime: Timer::from_seconds(2.0, TimerMode::Once),
             },
+            Name::new("Pig"),
         ));
     }
 }

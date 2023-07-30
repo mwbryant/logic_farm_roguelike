@@ -1,12 +1,20 @@
+use bevy::input::common_conditions::input_toggle_active;
 use bevy::{prelude::*, render::camera::ScalingMode};
+use bevy_inspector_egui::prelude::ReflectInspectorOptions;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::InspectorOptions;
 use pig::PigPlugin;
+use ui::GameUI;
 
-#[derive(Component)]
+#[derive(Component, InspectorOptions, Default, Reflect)]
+#[reflect(Component, InspectorOptions)]
 pub struct Player {
+    #[inspector(min = 0.0)]
     pub speed: f32,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default, Reflect)]
+#[reflect(Resource)]
 pub struct Money(pub f32);
 
 mod pig;
@@ -28,8 +36,13 @@ fn main() {
                 })
                 .build(),
         )
+        .add_plugins(
+            WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
+        )
         .insert_resource(Money(100.0))
-        .add_plugins(PigPlugin)
+        .register_type::<Money>()
+        .register_type::<Player>()
+        .add_plugins((PigPlugin, GameUI))
         .add_systems(Startup, setup)
         .add_systems(Update, character_movement)
         .run();
@@ -53,6 +66,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         },
         Player { speed: 100.0 },
+        Name::new("Player"),
     ));
 }
 
