@@ -1,13 +1,16 @@
 use bevy::prelude::*;
 
-use crate::{Money, Player};
+use crate::{GameState, Money, MoneyEarnedEvent, Player};
 
 pub struct PigPlugin;
 
 impl Plugin for PigPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_pig_parent)
-            .add_systems(Update, (spawn_pig, pig_lifetime))
+            .add_systems(
+                Update,
+                (spawn_pig, pig_lifetime).run_if(in_state(GameState::Gameplay)),
+            )
             .register_type::<Pig>();
     }
 }
@@ -66,21 +69,14 @@ fn pig_lifetime(
     mut commands: Commands,
     time: Res<Time>,
     mut pigs: Query<(Entity, &mut Pig)>,
-    parent: Query<Entity, With<PigParent>>,
-    mut money: ResMut<Money>,
+    mut event_writer: EventWriter<MoneyEarnedEvent>,
 ) {
-    let parent = parent.single();
-
     for (pig_entity, mut pig) in &mut pigs {
         pig.lifetime.tick(time.delta());
 
         if pig.lifetime.finished() {
-            money.0 += 15.0;
-
-            commands.entity(parent).remove_children(&[pig_entity]);
-            commands.entity(pig_entity).despawn();
-
-            info!("Pig sold for $15! Current Money: ${:?}", money.0);
+            event_writer.send(MoneyEarnedEvent(15.0));
+            commands.entity(pig_entity).despawn_recursive();
         }
     }
 }

@@ -1,16 +1,93 @@
 use bevy::prelude::*;
 
-use crate::Money;
-
-pub struct GameUI;
-
+use crate::{GameState, Money};
 #[derive(Component)]
 pub struct MoneyText;
 
+#[derive(Component)]
+pub struct MainMenu;
+
+pub struct GameUI;
+
 impl Plugin for GameUI {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_game_ui)
+        app.add_systems(OnEnter(GameState::MainMenu), spawn_start_button)
+            .add_systems(OnEnter(GameState::Gameplay), spawn_game_ui)
+            .add_systems(
+                Update,
+                check_start_button.run_if(in_state(GameState::MainMenu)),
+            )
+            .add_systems(OnExit(GameState::MainMenu), despawn_start_button)
             .add_systems(Update, update_money_ui);
+    }
+}
+
+fn spawn_start_button(mut commands: Commands) {
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    align_self: AlignSelf::Center,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    ..default()
+                },
+                ..default()
+            },
+            MainMenu,
+            Name::new("UI Root"),
+        ))
+        .with_children(|commands| {
+            commands
+                .spawn((
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Percent(30.0),
+                            height: Val::Percent(10.0),
+                            align_self: AlignSelf::Center,
+                            justify_self: JustifySelf::Center,
+                            justify_content: JustifyContent::Center,
+                            align_content: AlignContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        background_color: Color::BLUE.into(),
+                        ..default()
+                    },
+                    MainMenu,
+                    Name::new("Start Button"),
+                ))
+                .with_children(|commands| {
+                    commands.spawn((TextBundle {
+                        text: Text::from_section(
+                            "Start Game",
+                            TextStyle {
+                                font_size: 32.0,
+                                ..default()
+                            },
+                        ),
+                        ..default()
+                    },));
+                });
+        });
+}
+
+fn check_start_button(
+    start_button: Query<&Interaction, With<MainMenu>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    let button = start_button.single();
+    match button {
+        Interaction::Pressed => next_state.set(GameState::Gameplay),
+        Interaction::None | Interaction::Hovered => {}
+    }
+}
+
+fn despawn_start_button(mut commands: Commands, start_menu: Query<Entity, With<MainMenu>>) {
+    for entity in &start_menu {
+        commands.entity(entity).despawn_recursive();
     }
 }
 

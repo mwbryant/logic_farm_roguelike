@@ -20,6 +20,16 @@ pub struct Money(pub f32);
 mod pig;
 mod ui;
 
+#[derive(Event)]
+pub struct MoneyEarnedEvent(f32);
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum GameState {
+    #[default]
+    MainMenu,
+    Gameplay,
+}
+
 fn main() {
     App::new()
         .add_plugins(
@@ -42,10 +52,38 @@ fn main() {
         .insert_resource(Money(100.0))
         .register_type::<Money>()
         .register_type::<Player>()
+        .add_event::<MoneyEarnedEvent>()
+        .add_state::<GameState>()
         .add_plugins((PigPlugin, GameUI))
         .add_systems(Startup, setup)
-        .add_systems(Update, character_movement)
+        .add_systems(
+            Update,
+            (character_movement, money_sound_effect, give_money)
+                .run_if(in_state(GameState::Gameplay)),
+        )
         .run();
+}
+
+fn money_sound_effect(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    mut money_events: EventReader<MoneyEarnedEvent>,
+) {
+    for _event in money_events.iter() {
+        commands.spawn((
+            AudioBundle {
+                source: assets.load("money.wav"),
+                ..default()
+            },
+            Name::new("MoneyAudio"),
+        ));
+    }
+}
+
+fn give_money(mut money_events: EventReader<MoneyEarnedEvent>, mut money: ResMut<Money>) {
+    for event in money_events.iter() {
+        money.0 += event.0
+    }
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
